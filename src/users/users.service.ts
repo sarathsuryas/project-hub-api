@@ -1,7 +1,7 @@
-import { ConflictException, Injectable, Logger } from '@nestjs/common';
+import { ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { hash } from 'bcryptjs';
 import { RegisterUserDto, UserResponseDto } from './users.dto.js';
-import { UsersRepository } from './users.repository.js';
+import { UserRow, UsersRepository } from './users.repository.js';
 
 @Injectable()
 export class UsersService {
@@ -25,12 +25,7 @@ export class UsersService {
         password_hash: passwordHash,
       });
       this.logger.log(`User registered: ${user.email} (id=${user.id})`);
-      return {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        created_at: user.created_at,
-      };
+      return this.toResponse(user);
     } catch (error) {
       if (this.isUniqueViolation(error)) {
         this.logger.warn(`Registration rejected: email already registered (${dto.email})`);
@@ -38,6 +33,23 @@ export class UsersService {
       }
       throw error;
     }
+  }
+
+  async me(id: number): Promise<UserResponseDto> {
+    const user = await this.usersRepository.findById(id);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    return this.toResponse(user);
+  }
+
+  private toResponse(user: UserRow): UserResponseDto {
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      created_at: user.created_at,
+    };
   }
 
   private isUniqueViolation(error: unknown): boolean {
