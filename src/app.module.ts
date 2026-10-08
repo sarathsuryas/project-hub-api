@@ -6,6 +6,7 @@ import { AppService } from './app.service.js';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor.js';
 import { validate } from './config/env.validation.js';
 import { DatabaseModule } from './database/database.module.js';
+import { UsersModule } from './users/users.module.js';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { DatabaseModule } from './database/database.module.js';
       validate, 
     }),
     DatabaseModule,
+    UsersModule,
   ],
   controllers: [AppController],
   providers: [
