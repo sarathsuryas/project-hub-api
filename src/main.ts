@@ -13,6 +13,7 @@ async function bootstrap() {
     .setTitle('project-hub API')
     .setDescription('project-hub REST API')
     .setVersion('0.0.1')
+    .addBearerAuth()
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('docs', app, document);
