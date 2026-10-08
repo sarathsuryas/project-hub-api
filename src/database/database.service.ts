@@ -1,15 +1,22 @@
-import { Inject, Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { Inject, Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { Pool, PoolClient, QueryResult, QueryResultRow } from 'pg';
 import { PG_POOL } from './database.tokens.js';
 
 @Injectable()
 export class DatabaseService implements OnModuleInit, OnModuleDestroy {
+  private readonly logger = new Logger(DatabaseService.name, { timestamp: true });
+
   constructor(@Inject(PG_POOL) private readonly pool: Pool) {}
 
   async onModuleInit(): Promise<void> {
     try {
       await this.pool.query('SELECT 1');
+      this.logger.log('PostgreSQL connection established');
     } catch (error) {
+      this.logger.error(
+        'PostgreSQL connection failed',
+        error instanceof Error ? error.stack : String(error),
+      );
       throw new Error('Failed to connect to PostgreSQL', { cause: error });
     }
   }
@@ -34,6 +41,9 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
       return result;
     } catch (error) {
       await client.query('ROLLBACK');
+      this.logger.warn(
+        `Transaction rolled back: ${error instanceof Error ? error.message : String(error)}`,
+      );
       throw error;
     } finally {
       client.release();
