@@ -27,4 +27,12 @@ export class ProjectsRepository extends BaseRepository<ProjectRow> {
     );
     return rows;
   }
+
+  async findByIdAndOwnerId(id: number, ownerId: number): Promise<ProjectRow | null> {
+    const { rows } = await this.query<ProjectRow>(
+      'SELECT * FROM projects WHERE id = $1 AND owner_id = $2',
+      [id, ownerId],
+    );
+    return rows[0] ?? null;
+  }
 }

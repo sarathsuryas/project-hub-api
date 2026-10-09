@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { CreateProjectDto, ProjectResponseDto } from './projects.dto.js';
 import { ProjectRow, ProjectsRepository } from './projects.repository.js';
 
@@ -21,6 +21,14 @@ export class ProjectsService {
   async findAllForOwner(ownerId: number): Promise<ProjectResponseDto[]> {
     const projects = await this.projectsRepository.findByOwnerId(ownerId);
     return projects.map((project) => this.toResponse(project));
+  }
+
+  async findOneForOwner(id: number, ownerId: number): Promise<ProjectResponseDto> {
+    const project = await this.projectsRepository.findByIdAndOwnerId(id, ownerId);
+    if (!project) {
+      throw new NotFoundException('Project not found');
+    }
+    return this.toResponse(project);
   }
 
   private toResponse(project: ProjectRow): ProjectResponseDto {

@@ -1,10 +1,12 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseIntPipe, Post } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
   ApiCreatedResponse,
+  ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
+  ApiParam,
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
@@ -25,6 +27,21 @@ export class ProjectsController {
   @ApiUnauthorizedResponse({ description: 'Missing or invalid JWT' })
   findAll(@CurrentUser() payload: JwtPayload): Promise<ProjectResponseDto[]> {
     return this.projectsService.findAllForOwner(payload.sub);
+  }
+
+  @Get(':id')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get a project owned by the authenticated user' })
+  @ApiParam({ name: 'id', type: Number, description: 'Project id', example: 1 })
+  @ApiOkResponse({ type: ProjectResponseDto, description: 'Project found' })
+  @ApiBadRequestResponse({ description: 'Invalid project id' })
+  @ApiUnauthorizedResponse({ description: 'Missing or invalid JWT' })
+  @ApiNotFoundResponse({ description: 'Project not found' })
+  findOne(
+    @CurrentUser() payload: JwtPayload,
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<ProjectResponseDto> {
+    return this.projectsService.findOneForOwner(id, payload.sub);
   }
 
   @Post()
