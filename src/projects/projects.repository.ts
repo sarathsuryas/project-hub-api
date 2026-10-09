@@ -35,4 +35,39 @@ export class ProjectsRepository extends BaseRepository<ProjectRow> {
     );
     return rows[0] ?? null;
   }
+
+  async updateByIdAndOwnerId(
+    id: number,
+    ownerId: number,
+    data: { name?: string; description?: string | null },
+  ): Promise<ProjectRow | null> {
+    const sets: string[] = [];
+    const params: unknown[] = [];
+    if (data.name !== undefined) {
+      params.push(data.name);
+      sets.push(`name = $${params.length}`);
+    }
+    if (data.description !== undefined) {
+      params.push(data.description);
+      sets.push(`description = $${params.length}`);
+    }
+    sets.push('updated_at = now()');
+    params.push(id, ownerId);
+
+    const { rows } = await this.query<ProjectRow>(
+      `UPDATE projects SET ${sets.join(', ')}
+        WHERE id = $${params.length - 1} AND owner_id = $${params.length}
+        RETURNING id, name, description, owner_id, created_at, updated_at`,
+      params,
+    );
+    return rows[0] ?? null;
+  }
+
+  async deleteByIdAndOwnerId(id: number, ownerId: number): Promise<boolean> {
+    const result = await this.query(
+      `DELETE FROM projects WHERE id = $1 AND owner_id = $2 RETURNING id`,
+      [id, ownerId],
+    );
+    return (result.rowCount ?? 0) > 0;
+  }
 }

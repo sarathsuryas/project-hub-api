@@ -1,5 +1,5 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { CreateProjectDto, ProjectResponseDto } from './projects.dto.js';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { CreateProjectDto, ProjectResponseDto, UpdateProjectDto } from './projects.dto.js';
 import { ProjectRow, ProjectsRepository } from './projects.repository.js';
 
 @Injectable()
@@ -29,6 +29,35 @@ export class ProjectsService {
       throw new NotFoundException('Project not found');
     }
     return this.toResponse(project);
+  }
+
+  async update(id: number, ownerId: number, dto: UpdateProjectDto): Promise<ProjectResponseDto> {
+    const data: { name?: string; description?: string | null } = {};
+    if (dto.name !== undefined) {
+      data.name = dto.name;
+    }
+    if (dto.description !== undefined) {
+      data.description = dto.description;
+    }
+
+    if (data.name === undefined && data.description === undefined) {
+      throw new BadRequestException('At least one of name or description is required');
+    }
+
+    const project = await this.projectsRepository.updateByIdAndOwnerId(id, ownerId, data);
+    if (!project) {
+      throw new NotFoundException('Project not found');
+    }
+    this.logger.log(`Project updated: id=${id} (owner_id=${ownerId})`);
+    return this.toResponse(project);
+  }
+
+  async remove(id: number, ownerId: number): Promise<void> {
+    const deleted = await this.projectsRepository.deleteByIdAndOwnerId(id, ownerId);
+    if (!deleted) {
+      throw new NotFoundException('Project not found');
+    }
+    this.logger.log(`Project deleted: id=${id} (owner_id=${ownerId})`);
   }
 
   private toResponse(project: ProjectRow): ProjectResponseDto {

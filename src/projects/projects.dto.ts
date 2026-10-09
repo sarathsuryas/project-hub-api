@@ -18,6 +18,28 @@ export class CreateProjectDto {
   description?: string;
 }
 
+export class UpdateProjectDto {
+  @ApiProperty({
+    description: 'New name of the project',
+    example: 'E-commerce Platform',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  name?: string;
+
+  @ApiProperty({
+    description: 'New description of the project',
+    example: 'Build an e-commerce application',
+    required: false,
+    nullable: true,
+  })
+  @IsOptional()
+  @IsString()
+  description?: string | null;
+}
+
 export class ProjectResponseDto {
   @ApiProperty({ description: 'Unique project id', example: 1 })
   id: number;
