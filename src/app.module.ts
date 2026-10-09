@@ -7,6 +7,7 @@ import { AuthModule } from './auth/auth.module.js';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor.js';
 import { validate } from './config/env.validation.js';
 import { DatabaseModule } from './database/database.module.js';
+import { ProjectsModule } from './projects/projects.module.js';
 import { UsersModule } from './users/users.module.js';
 
 @Module({
@@ -17,6 +18,7 @@ import { UsersModule } from './users/users.module.js';
     }),
     DatabaseModule,
     UsersModule,
+    ProjectsModule,
     AuthModule,
   ],
   controllers: [AppController],
