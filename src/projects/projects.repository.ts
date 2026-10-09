@@ -19,4 +19,12 @@ export class ProjectsRepository extends BaseRepository<ProjectRow> {
   constructor(@Inject(PG_POOL) pool: Pool) {
     super(pool);
   }
+
+  async findByOwnerId(ownerId: number): Promise<ProjectRow[]> {
+    const { rows } = await this.query<ProjectRow>(
+      'SELECT * FROM projects WHERE owner_id = $1 ORDER BY created_at DESC',
+      [ownerId],
+    );
+    return rows;
+  }
 }

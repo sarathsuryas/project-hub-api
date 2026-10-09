@@ -18,6 +18,11 @@ export class ProjectsService {
     return this.toResponse(project);
   }
 
+  async findAllForOwner(ownerId: number): Promise<ProjectResponseDto[]> {
+    const projects = await this.projectsRepository.findByOwnerId(ownerId);
+    return projects.map((project) => this.toResponse(project));
+  }
+
   private toResponse(project: ProjectRow): ProjectResponseDto {
     return {
       id: project.id,
