@@ -32,19 +32,14 @@ export class ProjectsService {
   }
 
   async update(id: number, ownerId: number, dto: UpdateProjectDto): Promise<ProjectResponseDto> {
-    const data: { name?: string; description?: string | null } = {};
-    if (dto.name !== undefined) {
-      data.name = dto.name;
-    }
-    if (dto.description !== undefined) {
-      data.description = dto.description;
-    }
-
-    if (data.name === undefined && data.description === undefined) {
+    if (dto.name === undefined && dto.description === undefined) {
       throw new BadRequestException('At least one of name or description is required');
     }
 
-    const project = await this.projectsRepository.updateByIdAndOwnerId(id, ownerId, data);
+    const project = await this.projectsRepository.updateByIdAndOwnerId(id, ownerId, {
+      name: dto.name,
+      description: dto.description,
+    });
     if (!project) {
       throw new NotFoundException('Project not found');
     }
