@@ -43,4 +43,12 @@ export class CommentsRepository extends BaseRepository<CommentRow> {
     const { rows } = await this.query<CommentRow>('UPDATE task_comments SET body = $2,updated_at = NOW() WHERE id = $1 RETURNING *', [id, body]);
     return rows[0] ?? null;
   }
+
+  // TODO(you): delete the comment with this id, but only if it belongs to this task.
+  //   params: $1 = id, $2 = taskId
+  //   result: true if a row was deleted, false otherwise (checked via rowCount below)
+  async deleteByIdAndTaskId(id: number, taskId: number): Promise<boolean> {
+    const result = await this.query('DELETE FROM task_comments WHERE id = $1 AND task_id = $2 RETURNING *', [id, taskId]);
+    return (result.rowCount ?? 0) > 0;
+  }
 }

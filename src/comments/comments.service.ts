@@ -69,6 +69,31 @@ export class CommentsService {
     return this.toResponse(updated);
   }
 
+  async remove(
+    projectId: number,
+    taskId: number,
+    commentId: number,
+    requesterId: number,
+  ): Promise<void> {
+    await this.tasksService.findAccessibleTask(projectId, taskId, requesterId);
+
+    const comment = await this.commentsRepository.findByIdAndTaskId(commentId, taskId);
+    if (!comment) {
+      throw new NotFoundException('Comment not found');
+    }
+    if (comment.author_id !== requesterId) {
+      throw new ForbiddenException('You can only delete your own comments');
+    }
+
+    const deleted = await this.commentsRepository.deleteByIdAndTaskId(commentId, taskId);
+    if (!deleted) {
+      throw new NotFoundException('Comment not found');
+    }
+    this.logger.log(
+      `Comment deleted: id=${commentId} (task_id=${taskId}, project_id=${projectId})`,
+    );
+  }
+
   private toResponse(comment: CommentRow): CommentResponseDto {
     return {
       id: comment.id,

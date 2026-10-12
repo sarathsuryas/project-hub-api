@@ -1,9 +1,21 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  ParseIntPipe,
+  Patch,
+  Post,
+} from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
   ApiCreatedResponse,
   ApiForbiddenResponse,
+  ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
@@ -79,5 +91,28 @@ export class CommentsController {
     @Body() dto: UpdateCommentDto,
   ): Promise<CommentResponseDto> {
     return this.commentsService.update(projectId, taskId, commentId, payload.sub, dto);
+  }
+
+  @Delete(':commentId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Delete your own comment on a task' })
+  @ApiParam({ name: 'projectId', type: Number, description: 'Project id', example: 1 })
+  @ApiParam({ name: 'taskId', type: Number, description: 'Task id', example: 1 })
+  @ApiParam({ name: 'commentId', type: Number, description: 'Comment id', example: 1 })
+  @ApiNoContentResponse({ description: 'Comment deleted' })
+  @ApiBadRequestResponse({ description: 'Invalid id' })
+  @ApiUnauthorizedResponse({ description: 'Missing or invalid JWT' })
+  @ApiForbiddenResponse({
+    description: 'Requester has no access to the project or is not the comment author',
+  })
+  @ApiNotFoundResponse({ description: 'Project, task, or comment not found' })
+  async remove(
+    @CurrentUser() payload: JwtPayload,
+    @Param('projectId', ParseIntPipe) projectId: number,
+    @Param('taskId', ParseIntPipe) taskId: number,
+    @Param('commentId', ParseIntPipe) commentId: number,
+  ): Promise<void> {
+    await this.commentsService.remove(projectId, taskId, commentId, payload.sub);
   }
 }
