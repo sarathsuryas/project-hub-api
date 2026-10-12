@@ -12,6 +12,13 @@ export interface ProjectRow extends QueryResultRow {
   updated_at: Date;
 }
 
+export interface ProjectMemberRow extends QueryResultRow {
+  project_id: number;
+  user_id: number;
+  role: 'OWNER' | 'MEMBER';
+  joined_at: Date;
+}
+
 @Injectable()
 export class ProjectsRepository extends BaseRepository<ProjectRow> {
   protected readonly tableName = 'projects';
@@ -58,6 +65,43 @@ export class ProjectsRepository extends BaseRepository<ProjectRow> {
     const result = await this.query(
       `DELETE FROM projects WHERE id = $1 AND owner_id = $2 RETURNING id`,
       [id, ownerId],
+    );
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async isMember(projectId: number, userId: number): Promise<boolean> {
+    const { rows } = await this.query(
+      'SELECT 1 FROM project_members WHERE project_id = $1 AND user_id = $2',
+      [projectId, userId],
+    );
+    return rows.length > 0;
+  }
+
+  async findMembersByProjectId(projectId: number): Promise<ProjectMemberRow[]> {
+    const { rows } = await this.query<ProjectMemberRow>(
+      `SELECT project_id, user_id, role, joined_at
+         FROM project_members
+        WHERE project_id = $1
+        ORDER BY joined_at ASC`,
+      [projectId],
+    );
+    return rows;
+  }
+
+  async insertMember(projectId: number, userId: number): Promise<ProjectMemberRow> {
+    const { rows } = await this.query<ProjectMemberRow>(
+      `INSERT INTO project_members (project_id, user_id, role)
+       VALUES ($1, $2, $3)
+       RETURNING project_id, user_id, role, joined_at`,
+      [projectId, userId, 'MEMBER'],
+    );
+    return rows[0];
+  }
+
+  async deleteMember(projectId: number, userId: number): Promise<boolean> {
+    const result = await this.query(
+      `DELETE FROM project_members WHERE project_id = $1 AND user_id = $2 RETURNING user_id`,
+      [projectId, userId],
     );
     return (result.rowCount ?? 0) > 0;
   }

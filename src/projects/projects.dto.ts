@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsInt, IsNotEmpty, IsOptional, IsString, Min } from 'class-validator';
 
 export class CreateProjectDto {
   @ApiProperty({ description: 'Name of the project', example: 'E-commerce Platform' })
@@ -73,4 +73,30 @@ export class ProjectResponseDto {
     example: '2026-10-09T14:30:00.000Z',
   })
   updated_at: Date;
+}
+
+export class AddProjectMemberDto {
+  @ApiProperty({ description: 'Id of the user to add to the project', example: 2 })
+  @IsInt()
+  @Min(1)
+  userId: number;
+}
+
+export class ProjectMemberResponseDto {
+  @ApiProperty({ description: 'Id of the project', example: 1 })
+  project_id: number;
+
+  @ApiProperty({ description: 'Id of the member user', example: 2 })
+  user_id: number;
+
+  @ApiProperty({ description: 'Role of the member in the project', enum: ['OWNER', 'MEMBER'], example: 'MEMBER' })
+  role: 'OWNER' | 'MEMBER';
+
+  @ApiProperty({
+    description: 'Timestamp when the user joined the project',
+    type: String,
+    format: 'date-time',
+    example: '2026-10-09T14:30:00.000Z',
+  })
+  joined_at: Date;
 }

@@ -1,12 +1,29 @@
-import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { CreateProjectDto, ProjectResponseDto, UpdateProjectDto } from './projects.dto.js';
-import { ProjectRow, ProjectsRepository } from './projects.repository.js';
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
+import { UsersRepository } from '../users/users.repository.js';
+import {
+  AddProjectMemberDto,
+  CreateProjectDto,
+  ProjectMemberResponseDto,
+  ProjectResponseDto,
+  UpdateProjectDto,
+} from './projects.dto.js';
+import { ProjectMemberRow, ProjectRow, ProjectsRepository } from './projects.repository.js';
 
 @Injectable()
 export class ProjectsService {
   private readonly logger = new Logger(ProjectsService.name, { timestamp: true });
 
-  constructor(private readonly projectsRepository: ProjectsRepository) {}
+  constructor(
+    private readonly projectsRepository: ProjectsRepository,
+    private readonly usersRepository: UsersRepository,
+  ) {}
 
   async create(ownerId: number, dto: CreateProjectDto): Promise<ProjectResponseDto> {
     const project = await this.projectsRepository.insert({
@@ -55,6 +72,66 @@ export class ProjectsService {
     this.logger.log(`Project deleted: id=${id} (owner_id=${ownerId})`);
   }
 
+  async addMember(
+    projectId: number,
+    requesterId: number,
+    dto: AddProjectMemberDto,
+  ): Promise<ProjectMemberResponseDto> {
+    const project = await this.projectsRepository.findById(projectId);
+    if (!project) {
+      throw new NotFoundException('Project not found');
+    }
+    if (project.owner_id !== requesterId) {
+      throw new ForbiddenException('Only the project owner can add members');
+    }
+    if (dto.userId === project.owner_id) {
+      throw new BadRequestException('The project owner is already part of the project');
+    }
+
+    const user = await this.usersRepository.findById(dto.userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const alreadyMember = await this.projectsRepository.isMember(projectId, dto.userId);
+    if (alreadyMember) {
+      throw new ConflictException('User is already a member of this project');
+    }
+
+    const member = await this.projectsRepository.insertMember(projectId, dto.userId);
+    this.logger.log(`Member added: project_id=${projectId}, user_id=${dto.userId}`);
+    return this.toMemberResponse(member);
+  }
+
+  async findMembers(projectId: number, requesterId: number): Promise<ProjectMemberResponseDto[]> {
+    const project = await this.projectsRepository.findById(projectId);
+    if (!project) {
+      throw new NotFoundException('Project not found');
+    }
+    if (project.owner_id !== requesterId) {
+      throw new ForbiddenException('Only the project owner can view members');
+    }
+
+    const members = await this.projectsRepository.findMembersByProjectId(projectId);
+    return members.map((member) => this.toMemberResponse(member));
+  }
+
+  async removeMember(projectId: number, requesterId: number, userId: number): Promise<void> {
+    const project = await this.projectsRepository.findById(projectId);
+    if (!project) {
+      throw new NotFoundException('Project not found');
+    }
+    if (project.owner_id !== requesterId) {
+      throw new ForbiddenException('Only the project owner can remove members');
+    }
+
+    const deleted = await this.projectsRepository.deleteMember(projectId, userId);
+    if (!deleted) {
+      throw new NotFoundException('Member not found');
+    }
+    this.logger.log(`Member removed: project_id=${projectId}, user_id=${userId}`);
+  }
+
   private toResponse(project: ProjectRow): ProjectResponseDto {
     return {
       id: project.id,
@@ -63,6 +140,15 @@ export class ProjectsService {
       owner_id: project.owner_id,
       created_at: project.created_at,
       updated_at: project.updated_at,
+    };
+  }
+
+  private toMemberResponse(member: ProjectMemberRow): ProjectMemberResponseDto {
+    return {
+      project_id: member.project_id,
+      user_id: member.user_id,
+      role: member.role,
+      joined_at: member.joined_at,
     };
   }
 }

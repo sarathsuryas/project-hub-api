@@ -13,7 +13,9 @@ import {
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
+  ApiConflictResponse,
   ApiCreatedResponse,
+  ApiForbiddenResponse,
   ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
@@ -24,7 +26,13 @@ import {
 } from '@nestjs/swagger';
 import type { JwtPayload } from '../auth/auth.dto.js';
 import { CurrentUser } from '../auth/current-user.decorator.js';
-import { CreateProjectDto, ProjectResponseDto, UpdateProjectDto } from './projects.dto.js';
+import {
+  AddProjectMemberDto,
+  CreateProjectDto,
+  ProjectMemberResponseDto,
+  ProjectResponseDto,
+  UpdateProjectDto,
+} from './projects.dto.js';
 import { ProjectsService } from './projects.service.js';
 
 @ApiTags('projects')
@@ -98,5 +106,56 @@ export class ProjectsController {
     @Param('id', ParseIntPipe) id: number,
   ): Promise<void> {
     await this.projectsService.remove(id, payload.sub);
+  }
+
+  @Post(':projectId/members')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Add a member to a project (owner only)' })
+  @ApiParam({ name: 'projectId', type: Number, description: 'Project id', example: 1 })
+  @ApiCreatedResponse({ type: ProjectMemberResponseDto, description: 'Member added' })
+  @ApiBadRequestResponse({ description: 'Validation failed or owner cannot be added' })
+  @ApiUnauthorizedResponse({ description: 'Missing or invalid JWT' })
+  @ApiForbiddenResponse({ description: 'Requester is not the project owner' })
+  @ApiNotFoundResponse({ description: 'Project or user not found' })
+  @ApiConflictResponse({ description: 'User is already a member' })
+  addMember(
+    @CurrentUser() payload: JwtPayload,
+    @Param('projectId', ParseIntPipe) projectId: number,
+    @Body() dto: AddProjectMemberDto,
+  ): Promise<ProjectMemberResponseDto> {
+    return this.projectsService.addMember(projectId, payload.sub, dto);
+  }
+
+  @Get(':projectId/members')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'List members of a project (owner only)' })
+  @ApiParam({ name: 'projectId', type: Number, description: 'Project id', example: 1 })
+  @ApiOkResponse({ type: [ProjectMemberResponseDto], description: 'Project members' })
+  @ApiUnauthorizedResponse({ description: 'Missing or invalid JWT' })
+  @ApiForbiddenResponse({ description: 'Requester is not the project owner' })
+  @ApiNotFoundResponse({ description: 'Project not found' })
+  findMembers(
+    @CurrentUser() payload: JwtPayload,
+    @Param('projectId', ParseIntPipe) projectId: number,
+  ): Promise<ProjectMemberResponseDto[]> {
+    return this.projectsService.findMembers(projectId, payload.sub);
+  }
+
+  @Delete(':projectId/members/:userId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Remove a member from a project (owner only)' })
+  @ApiParam({ name: 'projectId', type: Number, description: 'Project id', example: 1 })
+  @ApiParam({ name: 'userId', type: Number, description: 'Member user id', example: 2 })
+  @ApiNoContentResponse({ description: 'Member removed' })
+  @ApiUnauthorizedResponse({ description: 'Missing or invalid JWT' })
+  @ApiForbiddenResponse({ description: 'Requester is not the project owner' })
+  @ApiNotFoundResponse({ description: 'Project or member not found' })
+  async removeMember(
+    @CurrentUser() payload: JwtPayload,
+    @Param('projectId', ParseIntPipe) projectId: number,
+    @Param('userId', ParseIntPipe) userId: number,
+  ): Promise<void> {
+    await this.projectsService.removeMember(projectId, payload.sub, userId);
   }
 }
