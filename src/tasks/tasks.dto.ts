@@ -119,6 +119,16 @@ export class UpdateTaskDto {
   due_date?: string | null;
 }
 
+export class AssignTaskDto {
+  @ApiProperty({
+    description: 'Id of the project member to assign the task to (must be a project member)',
+    example: 2,
+  })
+  @IsInt()
+  @Min(1)
+  assignee_id: number;
+}
+
 export class TaskResponseDto {
   @ApiProperty({ description: 'Unique task id', example: 1 })
   id: number;

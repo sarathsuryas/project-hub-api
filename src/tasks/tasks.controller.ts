@@ -25,7 +25,7 @@ import {
 } from '@nestjs/swagger';
 import type { JwtPayload } from '../auth/auth.dto.js';
 import { CurrentUser } from '../auth/current-user.decorator.js';
-import { CreateTaskDto, TaskResponseDto, UpdateTaskDto } from './tasks.dto.js';
+import { AssignTaskDto, CreateTaskDto, TaskResponseDto, UpdateTaskDto } from './tasks.dto.js';
 import { TasksService } from './tasks.service.js';
 
 @ApiTags('tasks')
@@ -103,6 +103,25 @@ export class TasksController {
     @Param('taskId', ParseIntPipe) taskId: number,
   ): Promise<void> {
     await this.tasksService.remove(projectId, taskId, payload.sub);
+  }
+
+  @Patch(':taskId/assignee')
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Assign a task to a project member (owner or member)' })
+  @ApiParam({ name: 'projectId', type: Number, description: 'Project id', example: 1 })
+  @ApiParam({ name: 'taskId', type: Number, description: 'Task id', example: 1 })
+  @ApiOkResponse({ type: TaskResponseDto, description: 'Task assigned' })
+  @ApiBadRequestResponse({ description: 'Validation failed or assignee is not a project member' })
+  @ApiUnauthorizedResponse({ description: 'Missing or invalid JWT' })
+  @ApiForbiddenResponse({ description: 'Requester has no access to the project' })
+  @ApiNotFoundResponse({ description: 'Project or task not found' })
+  assign(
+    @CurrentUser() payload: JwtPayload,
+    @Param('projectId', ParseIntPipe) projectId: number,
+    @Param('taskId', ParseIntPipe) taskId: number,
+    @Body() dto: AssignTaskDto,
+  ): Promise<TaskResponseDto> {
+    return this.tasksService.assign(projectId, taskId, payload.sub, dto);
   }
 
   @Post()

@@ -6,7 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { ProjectRow, ProjectsRepository } from '../projects/projects.repository.js';
-import { CreateTaskDto, TaskResponseDto, UpdateTaskDto } from './tasks.dto.js';
+import { AssignTaskDto, CreateTaskDto, TaskResponseDto, UpdateTaskDto } from './tasks.dto.js';
 import { TaskRow, TasksRepository } from './tasks.repository.js';
 
 @Injectable()
@@ -117,6 +117,31 @@ export class TasksService {
       throw new NotFoundException('Task not found');
     }
     this.logger.log(`Task deleted: id=${taskId} (project_id=${projectId})`);
+  }
+
+  async assign(
+    projectId: number,
+    taskId: number,
+    requesterId: number,
+    dto: AssignTaskDto,
+  ): Promise<TaskResponseDto> {
+    await this.findAccessibleProject(projectId, requesterId);
+
+    const isMember = await this.projectsRepository.isMember(projectId, dto.assignee_id);
+    if (!isMember) {
+      throw new BadRequestException('Assignee must be a member of the project');
+    }
+
+    const task = await this.tasksRepository.updateByIdAndProjectId(taskId, projectId, {
+      assignee_id: dto.assignee_id,
+    });
+    if (!task) {
+      throw new NotFoundException('Task not found');
+    }
+    this.logger.log(
+      `Task assigned: id=${taskId} -> assignee_id=${dto.assignee_id} (project_id=${projectId})`,
+    );
+    return this.toResponse(task);
   }
 
   private async findAccessibleProject(projectId: number, requesterId: number): Promise<ProjectRow> {
