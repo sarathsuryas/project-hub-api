@@ -33,7 +33,7 @@ export class UsersController {
   }
 
   @Get('me')
-  @ApiBearerAuth()
+  @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Get the authenticated user profile' })
   @ApiOkResponse({ type: UserResponseDto, description: 'Current user profile' })
   @ApiUnauthorizedResponse({ description: 'Missing or invalid JWT' })

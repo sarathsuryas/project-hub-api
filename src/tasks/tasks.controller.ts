@@ -22,7 +22,7 @@ export class TasksController {
   constructor(private readonly tasksService: TasksService) {}
 
   @Get()
-  @ApiBearerAuth()
+  @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'List tasks of a project (owner or member)' })
   @ApiParam({ name: 'projectId', type: Number, description: 'Project id', example: 1 })
   @ApiOkResponse({ type: [TaskResponseDto], description: 'Project tasks' })
@@ -37,7 +37,7 @@ export class TasksController {
   }
 
   @Post()
-  @ApiBearerAuth()
+  @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Create a task on a project (owner or member)' })
   @ApiParam({ name: 'projectId', type: Number, description: 'Project id', example: 1 })
   @ApiCreatedResponse({ type: TaskResponseDto, description: 'Task created' })
