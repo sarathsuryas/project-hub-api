@@ -41,7 +41,7 @@ export class ProjectsController {
   constructor(private readonly projectsService: ProjectsService) {}
 
   @Get()
-  @ApiBearerAuth()
+  @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'List projects owned by the authenticated user' })
   @ApiOkResponse({ type: [ProjectResponseDto], description: 'Projects owned by the current user' })
   @ApiUnauthorizedResponse({ description: 'Missing or invalid JWT' })
@@ -50,7 +50,7 @@ export class ProjectsController {
   }
 
   @Get(':id')
-  @ApiBearerAuth()
+  @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Get a project owned by the authenticated user' })
   @ApiParam({ name: 'id', type: Number, description: 'Project id', example: 1 })
   @ApiOkResponse({ type: ProjectResponseDto, description: 'Project found' })
@@ -65,7 +65,7 @@ export class ProjectsController {
   }
 
   @Post()
-  @ApiBearerAuth()
+  @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Create a project owned by the authenticated user' })
   @ApiCreatedResponse({ type: ProjectResponseDto, description: 'Project created' })
   @ApiBadRequestResponse({ description: 'Validation failed (name required)' })
@@ -78,7 +78,7 @@ export class ProjectsController {
   }
 
   @Patch(':id')
-  @ApiBearerAuth()
+  @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Update a project owned by the authenticated user' })
   @ApiParam({ name: 'id', type: Number, description: 'Project id', example: 1 })
   @ApiOkResponse({ type: ProjectResponseDto, description: 'Project updated' })
@@ -95,7 +95,7 @@ export class ProjectsController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiBearerAuth()
+  @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Delete a project owned by the authenticated user' })
   @ApiParam({ name: 'id', type: Number, description: 'Project id', example: 1 })
   @ApiNoContentResponse({ description: 'Project deleted' })
@@ -109,7 +109,7 @@ export class ProjectsController {
   }
 
   @Post(':projectId/members')
-  @ApiBearerAuth()
+  @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Add a member to a project (owner only)' })
   @ApiParam({ name: 'projectId', type: Number, description: 'Project id', example: 1 })
   @ApiCreatedResponse({ type: ProjectMemberResponseDto, description: 'Member added' })
@@ -127,7 +127,7 @@ export class ProjectsController {
   }
 
   @Get(':projectId/members')
-  @ApiBearerAuth()
+  @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'List members of a project (owner only)' })
   @ApiParam({ name: 'projectId', type: Number, description: 'Project id', example: 1 })
   @ApiOkResponse({ type: [ProjectMemberResponseDto], description: 'Project members' })
@@ -143,7 +143,7 @@ export class ProjectsController {
 
   @Delete(':projectId/members/:userId')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiBearerAuth()
+  @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Remove a member from a project (owner only)' })
   @ApiParam({ name: 'projectId', type: Number, description: 'Project id', example: 1 })
   @ApiParam({ name: 'userId', type: Number, description: 'Member user id', example: 2 })

@@ -13,10 +13,12 @@ async function bootstrap() {
     .setTitle('project-hub API')
     .setDescription('project-hub REST API')
     .setVersion('0.0.1')
-    .addBearerAuth()
+    .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'JWT' }, 'access-token')
     .build();
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('docs', app, document);
+  SwaggerModule.setup('docs', app, document, {
+    swaggerOptions: { persistAuthorization: true },
+  });
 
   await app.listen(process.env.PORT ?? 3000);
 }

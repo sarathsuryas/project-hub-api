@@ -24,11 +24,70 @@ export class TasksRepository extends BaseRepository<TaskRow> {
     super(pool);
   }
 
-  async findByProjectId(projectId: number): Promise<TaskRow[]> {
+  async findByProjectId(
+    projectId: number,
+    filters: { status?: TaskStatus; assignee_id?: number } = {},
+  ): Promise<TaskRow[]> {
+    const conditions = ['project_id = $1'];
+    const params: unknown[] = [projectId];
+    if (filters.status !== undefined) {
+      params.push(filters.status);
+      conditions.push(`status = $${params.length}`);
+    }
+    if (filters.assignee_id !== undefined) {
+      params.push(filters.assignee_id);
+      conditions.push(`assignee_id = $${params.length}`);
+    }
+
     const { rows } = await this.query<TaskRow>(
-      'SELECT * FROM tasks WHERE project_id = $1 ORDER BY created_at DESC',
-      [projectId],
+      `SELECT * FROM tasks WHERE ${conditions.join(' AND ')} ORDER BY created_at DESC`,
+      params,
     );
     return rows;
+  }
+
+  async findByIdAndProjectId(id: number, projectId: number): Promise<TaskRow | null> {
+    const { rows } = await this.query<TaskRow>(
+      'SELECT * FROM tasks WHERE id = $1 AND project_id = $2',
+      [id, projectId],
+    );
+    return rows[0] ?? null;
+  }
+
+  async updateByIdAndProjectId(
+    id: number,
+    projectId: number,
+    data: {
+      title?: string;
+      description?: string | null;
+      status?: TaskStatus;
+      assignee_id?: number | null;
+      due_date?: Date | null;
+    },
+  ): Promise<TaskRow | null> {
+    const columns = Object.keys(data).filter(
+      (column) => data[column as keyof typeof data] !== undefined,
+    );
+    if (columns.length === 0) {
+      return this.findByIdAndProjectId(id, projectId);
+    }
+
+    const set = columns.map((column, index) => `"${column}" = $${index + 1}`).join(', ');
+    const { rows } = await this.query<TaskRow>(
+      `UPDATE tasks
+          SET ${set}, updated_at = now()
+        WHERE id = $${columns.length + 1} AND project_id = $${columns.length + 2}
+        RETURNING *`,
+      [...columns.map((column) => data[column as keyof typeof data]), id, projectId],
+    );
+    return rows[0] ?? null;
+  }
+
+  async deleteByIdAndProjectId(id: number, projectId: number): Promise<boolean> {
+    const result = await this.query(
+      'DELETE FROM tasks WHERE id = $1 AND project_id = $2 RETURNING id',
+      [id, projectId],
+    );
+    return (result.rowCount ?? 0) > 0;
   }
 }
