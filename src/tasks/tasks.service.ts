@@ -6,7 +6,13 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { ProjectRow, ProjectsRepository } from '../projects/projects.repository.js';
-import { AssignTaskDto, CreateTaskDto, TaskResponseDto, UpdateTaskDto } from './tasks.dto.js';
+import {
+  AssignTaskDto,
+  CreateTaskDto,
+  ListTasksQueryDto,
+  TaskResponseDto,
+  UpdateTaskDto,
+} from './tasks.dto.js';
 import { TaskRow, TasksRepository } from './tasks.repository.js';
 
 @Injectable()
@@ -44,10 +50,17 @@ export class TasksService {
     return this.toResponse(task);
   }
 
-  async findAll(projectId: number, requesterId: number): Promise<TaskResponseDto[]> {
+  async findAll(
+    projectId: number,
+    requesterId: number,
+    filters: ListTasksQueryDto = {},
+  ): Promise<TaskResponseDto[]> {
     await this.findAccessibleProject(projectId, requesterId);
 
-    const tasks = await this.tasksRepository.findByProjectId(projectId);
+    const tasks = await this.tasksRepository.findByProjectId(projectId, {
+      status: filters.status,
+      assignee_id: filters.assignee_id,
+    });
     return tasks.map((task) => this.toResponse(task));
   }
 

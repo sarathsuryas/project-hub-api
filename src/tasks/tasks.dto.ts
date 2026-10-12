@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import {
   IsDateString,
   IsIn,
@@ -127,6 +128,30 @@ export class AssignTaskDto {
   @IsInt()
   @Min(1)
   assignee_id: number;
+}
+
+export class ListTasksQueryDto {
+  @ApiProperty({
+    description: 'Filter tasks by status',
+    enum: TASK_STATUSES,
+    example: 'IN_PROGRESS',
+    required: false,
+  })
+  @IsOptional()
+  @IsIn(TASK_STATUSES)
+  status?: TaskStatus;
+
+  @ApiProperty({
+    description: 'Filter tasks by assignee id',
+    example: 2,
+    required: false,
+    type: Number,
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  assignee_id?: number;
 }
 
 export class TaskResponseDto {

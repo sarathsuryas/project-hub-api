@@ -24,10 +24,24 @@ export class TasksRepository extends BaseRepository<TaskRow> {
     super(pool);
   }
 
-  async findByProjectId(projectId: number): Promise<TaskRow[]> {
+  async findByProjectId(
+    projectId: number,
+    filters: { status?: TaskStatus; assignee_id?: number } = {},
+  ): Promise<TaskRow[]> {
+    const conditions = ['project_id = $1'];
+    const params: unknown[] = [projectId];
+    if (filters.status !== undefined) {
+      params.push(filters.status);
+      conditions.push(`status = $${params.length}`);
+    }
+    if (filters.assignee_id !== undefined) {
+      params.push(filters.assignee_id);
+      conditions.push(`assignee_id = $${params.length}`);
+    }
+
     const { rows } = await this.query<TaskRow>(
-      'SELECT * FROM tasks WHERE project_id = $1 ORDER BY created_at DESC',
-      [projectId],
+      `SELECT * FROM tasks WHERE ${conditions.join(' AND ')} ORDER BY created_at DESC`,
+      params,
     );
     return rows;
   }

@@ -9,6 +9,7 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  Query,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
@@ -25,7 +26,13 @@ import {
 } from '@nestjs/swagger';
 import type { JwtPayload } from '../auth/auth.dto.js';
 import { CurrentUser } from '../auth/current-user.decorator.js';
-import { AssignTaskDto, CreateTaskDto, TaskResponseDto, UpdateTaskDto } from './tasks.dto.js';
+import {
+  AssignTaskDto,
+  CreateTaskDto,
+  ListTasksQueryDto,
+  TaskResponseDto,
+  UpdateTaskDto,
+} from './tasks.dto.js';
 import { TasksService } from './tasks.service.js';
 
 @ApiTags('tasks')
@@ -35,17 +42,22 @@ export class TasksController {
 
   @Get()
   @ApiBearerAuth('access-token')
-  @ApiOperation({ summary: 'List tasks of a project (owner or member)' })
+  @ApiOperation({
+    summary:
+      'List tasks of a project, optionally filtered by status and/or assignee (owner or member)',
+  })
   @ApiParam({ name: 'projectId', type: Number, description: 'Project id', example: 1 })
   @ApiOkResponse({ type: [TaskResponseDto], description: 'Project tasks' })
+  @ApiBadRequestResponse({ description: 'Invalid status or assignee filter' })
   @ApiUnauthorizedResponse({ description: 'Missing or invalid JWT' })
   @ApiForbiddenResponse({ description: 'Requester has no access to the project' })
   @ApiNotFoundResponse({ description: 'Project not found' })
   findAll(
     @CurrentUser() payload: JwtPayload,
     @Param('projectId', ParseIntPipe) projectId: number,
+    @Query() query: ListTasksQueryDto,
   ): Promise<TaskResponseDto[]> {
-    return this.tasksService.findAll(projectId, payload.sub);
+    return this.tasksService.findAll(projectId, payload.sub, query);
   }
 
   @Get(':taskId')
