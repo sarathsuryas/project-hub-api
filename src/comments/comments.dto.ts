@@ -13,6 +13,18 @@ export class CreateCommentDto {
   body: string;
 }
 
+export class UpdateCommentDto {
+  @ApiProperty({
+    description: 'New comment text',
+    example: 'Schema draft is ready for review (updated)',
+    maxLength: 5000,
+  })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(5000)
+  body: string;
+}
+
 export class CommentResponseDto {
   @ApiProperty({ description: 'Unique comment id', example: 1 })
   id: number;

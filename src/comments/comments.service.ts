@@ -1,6 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { TasksService } from '../tasks/tasks.service.js';
-import { CommentResponseDto, CreateCommentDto } from './comments.dto.js';
+import { CommentResponseDto, CreateCommentDto, UpdateCommentDto } from './comments.dto.js';
 import { CommentRow, CommentsRepository } from './comments.repository.js';
 
 @Injectable()
@@ -40,6 +40,33 @@ export class CommentsService {
 
     const comments = await this.commentsRepository.findByTaskId(taskId);
     return comments.map((comment) => this.toResponse(comment));
+  }
+
+  async update(
+    projectId: number,
+    taskId: number,
+    commentId: number,
+    requesterId: number,
+    dto: UpdateCommentDto,
+  ): Promise<CommentResponseDto> {
+    await this.tasksService.findAccessibleTask(projectId, taskId, requesterId);
+
+    const comment = await this.commentsRepository.findByIdAndTaskId(commentId, taskId);
+    if (!comment) {
+      throw new NotFoundException('Comment not found');
+    }
+    if (comment.author_id !== requesterId) {
+      throw new ForbiddenException('You can only edit your own comments');
+    }
+
+    const updated = await this.commentsRepository.updateBody(commentId, dto.body);
+    if (!updated) {
+      throw new NotFoundException('Comment not found');
+    }
+    this.logger.log(
+      `Comment updated: id=${commentId} (task_id=${taskId}, project_id=${projectId})`,
+    );
+    return this.toResponse(updated);
   }
 
   private toResponse(comment: CommentRow): CommentResponseDto {

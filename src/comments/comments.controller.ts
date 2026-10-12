@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -13,7 +13,7 @@ import {
 } from '@nestjs/swagger';
 import type { JwtPayload } from '../auth/auth.dto.js';
 import { CurrentUser } from '../auth/current-user.decorator.js';
-import { CommentResponseDto, CreateCommentDto } from './comments.dto.js';
+import { CommentResponseDto, CreateCommentDto, UpdateCommentDto } from './comments.dto.js';
 import { CommentsService } from './comments.service.js';
 
 @ApiTags('comments')
@@ -56,5 +56,28 @@ export class CommentsController {
     @Body() dto: CreateCommentDto,
   ): Promise<CommentResponseDto> {
     return this.commentsService.create(projectId, taskId, payload.sub, dto);
+  }
+
+  @Patch(':commentId')
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Edit your own comment on a task' })
+  @ApiParam({ name: 'projectId', type: Number, description: 'Project id', example: 1 })
+  @ApiParam({ name: 'taskId', type: Number, description: 'Task id', example: 1 })
+  @ApiParam({ name: 'commentId', type: Number, description: 'Comment id', example: 1 })
+  @ApiOkResponse({ type: CommentResponseDto, description: 'Comment updated' })
+  @ApiBadRequestResponse({ description: 'Validation failed or invalid id' })
+  @ApiUnauthorizedResponse({ description: 'Missing or invalid JWT' })
+  @ApiForbiddenResponse({
+    description: 'Requester has no access to the project or is not the comment author',
+  })
+  @ApiNotFoundResponse({ description: 'Project, task, or comment not found' })
+  update(
+    @CurrentUser() payload: JwtPayload,
+    @Param('projectId', ParseIntPipe) projectId: number,
+    @Param('taskId', ParseIntPipe) taskId: number,
+    @Param('commentId', ParseIntPipe) commentId: number,
+    @Body() dto: UpdateCommentDto,
+  ): Promise<CommentResponseDto> {
+    return this.commentsService.update(projectId, taskId, commentId, payload.sub, dto);
   }
 }

@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "env": {
+    "CLAUDE_CODE_SCROLL_SPEED": "1"
+  },
+  "permissions": {
+    "allow": [
+      "Bash(npm run build)",
+      "Bash(npm run lint)",
+      "Bash(npm run format)",
+      "Bash(npm test)",
+      "Bash(npm run test)",
+      "Bash(npm run test:e2e)",
+      "Bash(npm run migrate:create *)"
+    ],
+    "ask": [
+      "Bash(npm run migrate:up*)",
+      "Bash(npm run migrate:down*)"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*.local)",
+      "Read(./.env.local)"
+    ]
+  }
+}
