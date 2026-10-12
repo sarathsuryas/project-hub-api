@@ -6,7 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { ProjectRow, ProjectsRepository } from '../projects/projects.repository.js';
-import { CreateTaskDto, TaskResponseDto } from './tasks.dto.js';
+import { CreateTaskDto, TaskResponseDto, UpdateTaskDto } from './tasks.dto.js';
 import { TaskRow, TasksRepository } from './tasks.repository.js';
 
 @Injectable()
@@ -49,6 +49,74 @@ export class TasksService {
 
     const tasks = await this.tasksRepository.findByProjectId(projectId);
     return tasks.map((task) => this.toResponse(task));
+  }
+
+  async findOne(projectId: number, taskId: number, requesterId: number): Promise<TaskResponseDto> {
+    await this.findAccessibleProject(projectId, requesterId);
+
+    const task = await this.tasksRepository.findByIdAndProjectId(taskId, projectId);
+    if (!task) {
+      throw new NotFoundException('Task not found');
+    }
+    return this.toResponse(task);
+  }
+
+  async update(
+    projectId: number,
+    taskId: number,
+    requesterId: number,
+    dto: UpdateTaskDto,
+  ): Promise<TaskResponseDto> {
+    await this.findAccessibleProject(projectId, requesterId);
+
+    if (
+      dto.title === undefined &&
+      dto.description === undefined &&
+      dto.status === undefined &&
+      dto.assignee_id === undefined &&
+      dto.due_date === undefined
+    ) {
+      throw new BadRequestException('At least one updatable field is required');
+    }
+
+    if (dto.assignee_id !== undefined && dto.assignee_id !== null) {
+      const isMember = await this.projectsRepository.isMember(projectId, dto.assignee_id);
+      if (!isMember) {
+        throw new BadRequestException('Assignee must be a member of the project');
+      }
+    }
+
+    let dueDate: Date | null | undefined;
+    if (dto.due_date === undefined) {
+      dueDate = undefined;
+    } else if (dto.due_date === null) {
+      dueDate = null;
+    } else {
+      dueDate = new Date(dto.due_date);
+    }
+
+    const task = await this.tasksRepository.updateByIdAndProjectId(taskId, projectId, {
+      title: dto.title,
+      description: dto.description,
+      status: dto.status,
+      assignee_id: dto.assignee_id,
+      due_date: dueDate,
+    });
+    if (!task) {
+      throw new NotFoundException('Task not found');
+    }
+    this.logger.log(`Task updated: id=${taskId} (project_id=${projectId})`);
+    return this.toResponse(task);
+  }
+
+  async remove(projectId: number, taskId: number, requesterId: number): Promise<void> {
+    await this.findAccessibleProject(projectId, requesterId);
+
+    const deleted = await this.tasksRepository.deleteByIdAndProjectId(taskId, projectId);
+    if (!deleted) {
+      throw new NotFoundException('Task not found');
+    }
+    this.logger.log(`Task deleted: id=${taskId} (project_id=${projectId})`);
   }
 
   private async findAccessibleProject(projectId: number, requesterId: number): Promise<ProjectRow> {
