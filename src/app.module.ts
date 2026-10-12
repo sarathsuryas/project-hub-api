@@ -8,17 +8,19 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor.js
 import { validate } from './config/env.validation.js';
 import { DatabaseModule } from './database/database.module.js';
 import { ProjectsModule } from './projects/projects.module.js';
+import { TasksModule } from './tasks/tasks.module.js';
 import { UsersModule } from './users/users.module.js';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
-      isGlobal: true, 
-      validate, 
+      isGlobal: true,
+      validate,
     }),
     DatabaseModule,
     UsersModule,
     ProjectsModule,
+    TasksModule,
     AuthModule,
   ],
   controllers: [AppController],
