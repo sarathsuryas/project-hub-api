@@ -8,6 +8,6 @@ import { TasksService } from './tasks.service.js';
   imports: [ProjectsModule],
   controllers: [TasksController],
   providers: [TasksService, TasksRepository],
-  exports: [TasksRepository],
+  exports: [TasksService, TasksRepository],
 })
 export class TasksModule {}

@@ -65,13 +65,22 @@ export class TasksService {
   }
 
   async findOne(projectId: number, taskId: number, requesterId: number): Promise<TaskResponseDto> {
+    const task = await this.findAccessibleTask(projectId, taskId, requesterId);
+    return this.toResponse(task);
+  }
+
+  async findAccessibleTask(
+    projectId: number,
+    taskId: number,
+    requesterId: number,
+  ): Promise<TaskRow> {
     await this.findAccessibleProject(projectId, requesterId);
 
     const task = await this.tasksRepository.findByIdAndProjectId(taskId, projectId);
     if (!task) {
       throw new NotFoundException('Task not found');
     }
-    return this.toResponse(task);
+    return task;
   }
 
   async update(
