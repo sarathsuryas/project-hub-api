@@ -5,7 +5,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { ProjectsRepository } from '../projects/projects.repository.js';
+import { ProjectRow, ProjectsRepository } from '../projects/projects.repository.js';
 import { CreateTaskDto, TaskResponseDto } from './tasks.dto.js';
 import { TaskRow, TasksRepository } from './tasks.repository.js';
 
@@ -23,16 +23,7 @@ export class TasksService {
     requesterId: number,
     dto: CreateTaskDto,
   ): Promise<TaskResponseDto> {
-    const project = await this.projectsRepository.findById(projectId);
-    if (!project) {
-      throw new NotFoundException('Project not found');
-    }
-
-    const isOwner = project.owner_id === requesterId;
-    const canAccess = isOwner || (await this.projectsRepository.isMember(projectId, requesterId));
-    if (!canAccess) {
-      throw new ForbiddenException('You do not have access to this project');
-    }
+    await this.findAccessibleProject(projectId, requesterId);
 
     if (dto.assignee_id !== undefined && dto.assignee_id !== null) {
       const isMember = await this.projectsRepository.isMember(projectId, dto.assignee_id);
@@ -51,6 +42,29 @@ export class TasksService {
     });
     this.logger.log(`Task created: ${task.title} (id=${task.id}, project_id=${projectId})`);
     return this.toResponse(task);
+  }
+
+  async findAll(projectId: number, requesterId: number): Promise<TaskResponseDto[]> {
+    await this.findAccessibleProject(projectId, requesterId);
+
+    const tasks = await this.tasksRepository.findByProjectId(projectId);
+    return tasks.map((task) => this.toResponse(task));
+  }
+
+  private async findAccessibleProject(projectId: number, requesterId: number): Promise<ProjectRow> {
+    const project = await this.projectsRepository.findById(projectId);
+    if (!project) {
+      throw new NotFoundException('Project not found');
+    }
+
+    const canAccess =
+      project.owner_id === requesterId ||
+      (await this.projectsRepository.isMember(projectId, requesterId));
+    if (!canAccess) {
+      throw new ForbiddenException('You do not have access to this project');
+    }
+
+    return project;
   }
 
   private toResponse(task: TaskRow): TaskResponseDto {
